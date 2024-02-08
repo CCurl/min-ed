@@ -1,5 +1,5 @@
-app := pg
-app32 := pg32
+app := min-ed
+app32 := min-ed32
 
 CXX := clang
 CXXFLAGS := -m64 -O3 -D IS_LINUX
@@ -7,7 +7,7 @@ C32FLAGS := -m32 -O3 -D IS_LINUX
 
 srcfiles := $(shell find . -name "*.c")
 incfiles := $(shell find . -name "*.h")
-LDLIBS   := -lm
+# LDLIBS   := -lm
 
 all: $(app) $(app32)
 

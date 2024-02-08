@@ -1,4 +1,4 @@
-// editor.cpp - A simple block editor
+// editor.c - A simple block editor
 
 #include "editor.h"
 
@@ -14,6 +14,8 @@
 #define DIRTY(l)      isDirty=1; SHOW(l,1)
 #define BCASE         break; case
 #define BTW(n,l,h)    ((l<=n) && (n<=h))
+#define min(a,b)      ((a<b)?(a):(b))
+#define max(a,b)      ((a>b)?(a):(b))
 
 enum { NORMAL = 1, INSERT, REPLACE, QUIT };
 
