@@ -4,9 +4,9 @@
 
 #define MAX_LINES     500
 #define LLEN          100
-#define SCR_LINES     scrLines
 #define DEFAULT_H     35 // change as desired
 
+#define SCR_LINES     scrLines
 #define BLOCK_SZ      (MAX_LINES*LLEN)
 #define EDCHAR(l,o)   edBuf[((l)*LLEN)+(o)]
 #define EDCH(l,o)     EDCHAR(scrTop+l,o)
