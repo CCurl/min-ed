@@ -2,9 +2,10 @@
 
 #include "editor.h"
 
-#define MAX_LINES     500
-#define LLEN          100
-#define DEFAULT_H     35 // change as desired
+// Change these as desired
+#define MAX_LINES     500 // Maximum number of lines
+#define LLEN          100 // Maximum width of a line
+#define DEFAULT_H      35 // Number of lines to display
 
 #define SCR_LINES     scrLines
 #define BLOCK_SZ      (MAX_LINES*LLEN)
