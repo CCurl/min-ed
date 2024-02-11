@@ -5,7 +5,7 @@
 // Change these as desired
 #define MAX_LINES     500 // Maximum number of lines
 #define LLEN          100 // Maximum width of a line
-#define DEFAULT_H      35 // Number of lines to display
+#define SCR_HEIGHT     35 // Number of lines to display
 
 #define SCR_LINES     scrLines
 #define BLOCK_SZ      (MAX_LINES*LLEN)
@@ -20,7 +20,7 @@
 
 enum { NORMAL = 1, INSERT, REPLACE, QUIT };
 
-int scrLines = DEFAULT_H;
+int scrLines = SCR_HEIGHT;
 char theBlock[BLOCK_SZ], *edFileName;
 int line, off, blkNum, edMode, scrTop;
 int isDirty, lineShow[MAX_LINES];
