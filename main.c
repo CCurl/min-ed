@@ -65,6 +65,6 @@ void printStringF(const char *fmt, ...) {
 
 int main(int argc, char *argv[]) {
     if (argc>1) { editFile(argv[1]); }
-    else { printString("usage: min-ed FileName"); }
+    else { printString("usage: min-ed FileName\n"); }
     return 0;
 }
