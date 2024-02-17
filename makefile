@@ -26,4 +26,4 @@ test: $(app)
 	./$(app) test1.txt
 
 bin: $(app)
-	cp -u -p $(app) ~/.local/bin/
+	cp -u -p $(app) ~/.local/bin/vic

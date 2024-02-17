@@ -1,6 +1,6 @@
 # A minimal text editor
 
-This is a minialistic text editor inspired by, and somewhat similar to, an extremely stripped-down version of VI.
+This is a minialistic text editor inspired by, and somewhat similar to, an extremely stripped-down v
 
 **NOTE: There is NO UNDO in this editor. Use 'L' to reload the file from disk.**
 
@@ -30,7 +30,7 @@ There are 4 modes in the editor:
 
 ### NORMAL mode
 
-The movement keys are similar to those in VI:
+NORMAL mode is similar to VI:
 
 | Key  | Action|
 | :--  | :-- |
