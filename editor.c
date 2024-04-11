@@ -138,6 +138,7 @@ void toBuf() {
     for (int i = 0; i < BLOCK_SZ; i++) {
         ch = theBlock[i];
         if (ch == 0) { break; }
+        if (ch == 9) { ch = 32; }
         if (ch ==10) {
             EDCHAR(l, o) = (char)ch;
             if (MAX_LINES <= (++l)) { return; }
@@ -147,7 +148,9 @@ void toBuf() {
             EDCHAR(l,o++) = (char)ch;
         }
     }
+    o = scrTop; scrTop = 0;
     for (int i = 0; i < MAX_LINES; i++) { addLF(i); }
+    scrTop = o;
 }
 
 void edRdBlk(int force) {
