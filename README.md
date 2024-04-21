@@ -15,7 +15,7 @@ There are 4 modes in the editor:
 
 | Key      | Action |
 | :--      | :-- |
-| [ctrl]+h | Left 1 char |
+| [ctrl]+h | Left 1 char (Delete if in INSERT mode) |
 | [ctrl]+j | Down 1 line |
 | [ctrl]+k | Up 1 line |
 | [ctrl]+l | Right 1 char |
@@ -26,6 +26,7 @@ There are 4 modes in the editor:
 | [ctrl]+d | Scroll down 1/2 screen |
 | [ctrl]+u | Scroll up 1/2 screen |
 | [ctrl]+x | Delete the char to the left of the cursor |
+| [ctrl]+z | Delete the char under the cursor |
 | [escape] | Change to NORMAL mode |
 
 ### NORMAL mode
@@ -47,6 +48,8 @@ NORMAL mode is similar to VI:
 | c    | Change: Delete the current char and change to INSERT mode (same as 'xi') |
 | C    | Change: Delete to the end of the line and change to INSERT mode (same as 'd$A') |
 | dd   | Copy the current line into the YANK buffer and delete the line |
+| d.   | Delete the char under the cursor (same as 'x') |
+| dw   | Delete the cto the end of the word |
 | d$   | Delete to the end of the line |
 | D    | Delete to the end of the line (same as 'd$') |
 | g    | Goto the top-left of the screen |

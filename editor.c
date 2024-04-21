@@ -40,6 +40,7 @@ void replaceMode() { edMode=REPLACE; strcpy(mode, "replace"); }
 int edKey() { return key(); }
 void fill(char *buf, int ch, int sz) { for (int i=0; i<sz; i++) { buf[i]=ch; } }
 int strEq(const char *a, const char *b) { return (strcmp(a,b)==0) ? 1 : 0; }
+char lower(char c) { return BTW(c,'A','Z') ? c+32 : c; }
 
 void NormLO() {
     line = min(max(line, 0), SCR_LINES-1);
@@ -189,6 +190,15 @@ void deleteChar() {
     addLF(line);
 }
 
+void deleteWord() {
+    int c = lower(EDCH(line,off));
+    while (BTW(c,'a','z') || BTW(c,'0','9')) {
+        deleteChar();
+        c = lower(EDCH(line,off));
+    }
+    while (EDCH(line,off)==' ') { deleteChar(); }
+}
+
 void deleteLine() {
     EDCH(line,0) = 0;
     toBlock();
@@ -250,6 +260,8 @@ int doInsertReplace(char c) {
 void edDelX(int c) {
     if (c==0) { c = key(); }
     if (c=='d') { strcpy(yanked, &EDCH(line, 0)); deleteLine(); }
+    else if (c=='.') { deleteChar(); }
+    else if (c=='w') { deleteWord(); }
     else if (c=='X') { if (0<off) { --off; deleteChar(); } }
     else if (c=='$') {
         c=off; while ((c<LLEN) && EDCH(line,c)) { EDCH(line,c)=0; c++; }
@@ -290,16 +302,20 @@ void edCommand() {
 
 int doCommon(int c) {
     int l = line, o = off, st = scrTop;
-    if ((c == 8) || (c == 127)) { mv(0, -1); }        // <backspace>
-    else if (c ==  4) { scroll(SCR_LINES/2); }        // <ctrl-d>
+    if ((c == 8) || (c == 127)) {                     // <backspace>
+        c = (edMode==INSERT) ? 24 : 150;
+    }
+    if (c ==  4) { scroll(SCR_LINES/2); }             // <ctrl-d>
     else if (c ==  5) { scroll(1); }                  // <ctrl-e>
     else if (c ==  9) { mv(0, 8); }                   // <tab>
+    else if (c ==150) { mv(0, -1); }                  // <left>
     else if (c == 10) { mv(1, 0); }                   // <ctrl-j>
     else if (c == 11) { mv(-1, 0); }                  // <ctrl-k>
     else if (c == 12) { mv(0, 1); }                   // <ctrl-l>
     else if (c == 24) { edDelX('X'); }                // <ctrl-x>
     else if (c == 21) { scroll(-SCR_LINES/2); }       // <ctrl-u>
     else if (c == 25) { scroll(-1); }                 // <ctrl-y>
+    else if (c == 26) { edDelX('.'); }                // <ctrl-z>
     return ((l != line) || (o != off) || (st != scrTop)) ? 1 : 0;
 }
 
