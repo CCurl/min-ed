@@ -18,7 +18,7 @@
 #define min(a,b)      ((a<b)?(a):(b))
 #define max(a,b)      ((a>b)?(a):(b))
 
-enum { NORMAL = 1, INSERT, REPLACE, QUIT };
+enum { NORMAL=1, INSERT, REPLACE, QUIT };
 
 int scrLines = SCR_HEIGHT;
 char theBlock[BLOCK_SZ], *edFileName;

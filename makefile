@@ -1,7 +1,7 @@
+ARCH ?= -m64
 app := min-ed
 
-CXX := clang
-CXXFLAGS := -m64 -O3 -D IS_LINUX
+CFLAGS := $(ARCH) -O3 -D IS_LINUX
 
 srcfiles := $(shell find . -name "*.c")
 incfiles := $(shell find . -name "*.h")
@@ -10,7 +10,7 @@ incfiles := $(shell find . -name "*.h")
 all: $(app)
 
 $(app): $(srcfiles) $(incfiles)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(app) $(srcfiles) $(LDLIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(app) $(srcfiles) $(LDLIBS)
 	ls -l $(app)
 
 clean:

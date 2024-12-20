@@ -1,6 +1,6 @@
 # A minimal text editor
 
-This is a minialistic text editor inspired by, and somewhat similar to, an extremely stripped-down v
+This is a minialistic text editor inspired by, and somewhat similar to, an extremely stripped-down vi
 
 **NOTE: There is NO UNDO in this editor. Use 'L' to reload the file from disk.**
 
