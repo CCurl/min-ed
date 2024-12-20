@@ -1,4 +1,4 @@
-// editor.c - A simple block editor
+// editor.c - A simple text editor
 
 #include "editor.h"
 
@@ -7,13 +7,12 @@
 #define LLEN          100 // Maximum width of a line
 #define SCR_HEIGHT     35 // Number of lines to display
 
-#define SCR_LINES     scrLines
 #define BLOCK_SZ      (MAX_LINES*LLEN)
 #define EDCHAR(l,o)   edBuf[((l)*LLEN)+(o)]
 #define EDCH(l,o)     EDCHAR(scrTop+l,o)
 #define SHOW(l,v)     lineShow[(scrTop+l)]=v
 #define DIRTY(l)      isDirty=1; SHOW(l,1)
-#define BCASE         break; case
+#define RCASE         return; case
 #define BTW(n,l,h)    ((l<=n) && (n<=h))
 #define min(a,b)      ((a<b)?(a):(b))
 #define max(a,b)      ((a>b)?(a):(b))
@@ -43,10 +42,10 @@ int strEq(const char *a, const char *b) { return (strcmp(a,b)==0) ? 1 : 0; }
 char lower(char c) { return BTW(c,'A','Z') ? c+32 : c; }
 
 void NormLO() {
-    line = min(max(line, 0), SCR_LINES-1);
+    line = min(max(line, 0), scrLines-1);
     off = min(max(off,0), LLEN-1);
     if (scrTop < 0) { scrTop=0; }
-    if (scrTop > (MAX_LINES-SCR_LINES)) { scrTop=MAX_LINES-SCR_LINES; }
+    if (scrTop > (MAX_LINES-scrLines)) { scrTop=MAX_LINES-scrLines; }
 }
 
 void showAll() {
@@ -83,17 +82,19 @@ void showLine(int l) {
 
 void showStatus() {
     static int cnt = 0;
-    GotoXY(1, SCR_LINES+2);
+    int c = EDCH(line,off);
+    GotoXY(1, scrLines+1);
     printString("- Block Editor v0.1 - ");
     printStringF("Block# %03d%s", blkNum, isDirty ? " *" : "");
     printStringF("%s- %s", msg ? msg : " ", mode);
-    printStringF("  [%d:%d]", (line+scrTop)+1, off+1);
+    printStringF(" [%d:%d]", (line+scrTop)+1, off+1);
+    printStringF(" (#%d/$%02x)", c, c);
     ClearEOL();
     if (msg && (1 < ++cnt)) { msg = NULL; cnt = 0; }
 }
 
 void showEditor() {
-    for (int i = 0; i < SCR_LINES; i++) { showLine(i); }
+    for (int i = 0; i < scrLines; i++) { showLine(i); }
 }
 
 void scroll(int amt) {
@@ -108,7 +109,7 @@ void mv(int l, int o) {
     line += l;
     off += o;
     if (line < 0) { scroll(line); line = 0; }
-    if (SCR_LINES <= line) { scroll(line-SCR_LINES+1); line=SCR_LINES-1; }
+    if (scrLines <= line) { scroll(line-scrLines+1); line=scrLines-1; }
     NormLO();
     SHOW(line,1);
 }
@@ -212,6 +213,7 @@ void insertSpace() {
         EDCH(line,o) = EDCH(line, o-1);
     }
     EDCH(line, off)=32;
+    DIRTY(line);
 }
 
 void insertLine() {
@@ -264,8 +266,9 @@ void edDelX(int c) {
     else if (c=='w') { deleteWord(); }
     else if (c=='X') { if (0<off) { --off; deleteChar(); } }
     else if (c=='$') {
-        c=off; while ((c<LLEN) && EDCH(line,c)) { EDCH(line,c)=0; c++; }
-        addLF(line); DIRTY(line);
+        EDCH(line,off) = 10;
+        c=off+1; while ((c<LLEN) && EDCH(line,c)) { EDCH(line,c)=0; c++; }
+        DIRTY(line);
     }
 }
 
@@ -286,10 +289,10 @@ int edReadLine(char *buf, int sz) {
 
 void edCommand() {
     char buf[32];
-    GotoXY(1, SCR_LINES+3); ClearEOL();
+    GotoXY(1, scrLines+2); ClearEOL();
     printChar(':');
     edReadLine(buf, sizeof(buf));
-    GotoXY(1, SCR_LINES+3); ClearEOL();
+    GotoXY(1, scrLines+2); ClearEOL();
     if (strEq(buf,"w")) { edSvBlk(0); }
     else if (strEq(buf,"w!")) { edSvBlk(1); }
     else if (strEq(buf,"wq")) { edSvBlk(0); edMode=QUIT; }
@@ -300,66 +303,72 @@ void edCommand() {
     }
 }
 
-int doCommon(int c) {
-    int l = line, o = off, st = scrTop;
-    if ((c == 8) || (c == 127)) {                     // <backspace>
+void doControl(int c) {
+    if ((c == 8) || (c == 127)) {          // <backspace>
         c = (edMode==INSERT) ? 24 : 150;
     }
-    if (c ==  4) { scroll(SCR_LINES/2); }             // <ctrl-d>
-    else if (c ==  5) { scroll(1); }                  // <ctrl-e>
-    else if (c ==  9) { mv(0, 8); }                   // <tab>
-    else if (c ==150) { mv(0, -1); }                  // <left>
-    else if (c == 10) { mv(1, 0); }                   // <ctrl-j>
-    else if (c == 11) { mv(-1, 0); }                  // <ctrl-k>
-    else if (c == 12) { mv(0, 1); }                   // <ctrl-l>
-    else if (c == 24) { edDelX('X'); }                // <ctrl-x>
-    else if (c == 21) { scroll(-SCR_LINES/2); }       // <ctrl-u>
-    else if (c == 25) { scroll(-1); }                 // <ctrl-y>
-    else if (c == 26) { edDelX('.'); }                // <ctrl-z>
-    return ((l != line) || (o != off) || (st != scrTop)) ? 1 : 0;
+    if ((c == 13) && BTW(edMode,INSERT,REPLACE)) {
+        doInsertReplace(c);
+        return;
+    }
+    switch (c) {
+        case    4: scroll(scrLines/2);     // <ctrl-d>
+        RCASE   5: scroll(1);              // <ctrl-e>
+        RCASE   9: mv(0,8);                // <tab>
+        RCASE  10: mv(1,0);                // <ctrl-j>
+        RCASE  11: mv(-1,0);               // <ctrl-k>
+        RCASE  12: mv(0,1);                // <ctrl-l>
+        RCASE  13: mv(1,-99);              // <ctrl-m>
+        RCASE  21: scroll(-scrLines/2);    // <ctrl-u>
+        RCASE  24: edDelX('X');            // <ctrl-x>
+        RCASE  25: scroll(-1);             // <ctrl-y>
+        RCASE  26: edDelX('.');            // <ctrl-z>
+        RCASE  27: normalMode();           // <esc>
+        RCASE 150: mv(0, -1);              // <left>
+    }
 }
 
-int processEditorChar(int c) {
-    if (c==27) { normalMode(); return 1; }
-    if (doCommon(c)) { return 1; }
+void processEditorChar(int c) {
+    if (!BTW(c,32,126)) { doControl(c); return; }
     if (BTW(edMode,INSERT,REPLACE)) {
-        return doInsertReplace((char)c);
+        doInsertReplace((char)c);
+        return;
     }
 
     switch (c) {
-        case   13: mv(1,-99);
-        BCASE ' ': mv(0, 1);
-        BCASE 'h': mv(0,-1);
-        BCASE 'l': mv(0, 1);
-        BCASE 'j': mv(1, 0);
-        BCASE 'k': mv(-1,0);
-        BCASE '_': mv(0,-99);
-        BCASE 'a': mv(0, 1); insertMode();
-        BCASE 'A': gotoEOL(); insertMode();
-        BCASE 'J': joinLines();
-        BCASE '$': gotoEOL();
-        BCASE 'g': mv(-line,-off);
-        BCASE 'G': mv(SCR_LINES,-99);
-        BCASE 'i': insertMode();
-        BCASE 'I': mv(0, -99); insertMode();
-        BCASE 'o': mv(1, -99); insertLine(); insertMode();
-        BCASE 'O': mv(0, -99); insertLine(); insertMode();
-        BCASE 'r': replaceChar(edKey(), 0, 1);
-        BCASE 'R': replaceMode();
-        BCASE 'c': deleteChar();; insertMode();
-        BCASE 'C': edDelX('$'); insertMode();
-        BCASE 'd': edDelX(0);
-        BCASE 'D': edDelX('$');
-        BCASE 'x': deleteChar();
-        BCASE 'X': edDelX('X');
-        BCASE 'L': edRdBlk(1);
-        BCASE 'Y': strcpy(yanked, &EDCH(line, 0));
-        BCASE 'p': mv(1,-99); insertLine(); strcpy(&EDCH(line,0), yanked);
-        BCASE 'P': mv(0,-99); insertLine(); strcpy(&EDCH(line,0), yanked);
-        BCASE '+': edSvBlk(0); ++blkNum; edRdBlk(0); line=off=0;
-        BCASE ':': edCommand();
+        case  ' ': mv(0,1);
+        RCASE ':': edCommand();
+        RCASE '$': gotoEOL();
+        RCASE '+': ++scrLines; CLS(); showAll();
+        RCASE '-': scrLines=max(scrLines-1,10); CLS(); showAll();
+        RCASE '_': mv(0,-99);
+        RCASE 'a': mv(0,1);  insertMode();
+        RCASE 'A': gotoEOL(); insertMode();
+        RCASE 'b': insertSpace();
+        RCASE 'c': deleteChar(); insertMode();
+        RCASE 'C': edDelX('$');  insertMode();
+        RCASE 'd': edDelX(0);
+        RCASE 'D': edDelX('$');
+        RCASE 'g': mv(-line,-off);
+        RCASE 'G': mv(scrLines,-99);
+        RCASE 'h': mv(0,-1);
+        RCASE 'i': insertMode();
+        RCASE 'I': mv(0,-99); insertMode();
+        RCASE 'j': mv(1,0);
+        RCASE 'J': joinLines();
+        RCASE 'k': mv(-1,0);
+        RCASE 'l': mv(0,1);
+        RCASE 'L': edRdBlk(1);
+        RCASE 'o': mv(1,-99); insertLine(); insertMode();
+        RCASE 'O': mv(0,-99); insertLine(); insertMode();
+        RCASE 'p': mv(1,-99); insertLine(); strcpy(&EDCH(line,0), yanked);
+        RCASE 'P': mv(0,-99); insertLine(); strcpy(&EDCH(line,0), yanked);
+        RCASE 'r': replaceChar(edKey(), 0, 1);
+        RCASE 'R': replaceMode();
+        RCASE 'x': edDelX('.');
+        RCASE 'X': edDelX('X');
+        RCASE 'Y': strcpy(yanked, &EDCH(line, 0));
     }
-    return 1;
 }
 
 void editFile(const char *fileName) {
@@ -376,6 +385,6 @@ void editFile(const char *fileName) {
         showStatus();
         processEditorChar(edKey());
     }
-    GotoXY(1, SCR_LINES+3);
+    GotoXY(1, scrLines+2);
     CursorOn();
 }

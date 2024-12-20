@@ -1,7 +1,7 @@
-ARCH ?= -m64
+ARCH ?= 64
 app := min-ed
 
-CFLAGS := $(ARCH) -O3 -D IS_LINUX
+CFLAGS := -m$(ARCH) -O3 -D IS_LINUX
 
 srcfiles := $(shell find . -name "*.c")
 incfiles := $(shell find . -name "*.h")
@@ -16,7 +16,7 @@ $(app): $(srcfiles) $(incfiles)
 clean:
 	rm -f $(app)
 
-test: $(app)
+test: clean $(app)
 	./$(app) editor.c
 
 bin: $(app)

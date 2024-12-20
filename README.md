@@ -41,10 +41,13 @@ NORMAL mode is similar to VI:
 | l    | Right 1 char |
 | _    | Goto the beginning of the line |
 | $    | Goto the end of the line |
+| +    | Increase the number of lines shown |
+| -    | Decrease the number of lines shown |
 | [SP] | Right 1 char |
 | [CR] | Goto the beginning of the next line |
 | a    | Append: move right 1 char and change to INSERT mode |
 | A    | Append: goto the end of the line and change to INSERT mode |
+| b    | Insert a single space at he cursor |
 | c    | Change: Delete the current char and change to INSERT mode (same as 'xi') |
 | C    | Change: Delete to the end of the line and change to INSERT mode (same as 'd$A') |
 | dd   | Copy the current line into the YANK buffer and delete the line |
