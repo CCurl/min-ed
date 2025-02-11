@@ -30,6 +30,7 @@ void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
 void ClearEOL() { printString("\x1B[K"); }
 void CursorOn() { printString("\x1B[?25h"); }
 void CursorOff() { printString("\x1B[?25l"); }
+void CursorBlock() { printString("\x1B[2 q"); }
 void FG(int fg) { printStringF("\x1B[38;5;%dm", fg); }
 void BG(int bg) { printStringF("\x1B[48;5;%dm", bg); }
 void Color(int fg, int bg) { FG(fg); BG(bg); }
@@ -117,25 +118,8 @@ char edChar(int l, int o) {
 }
 
 void showCursor() {
-    char c = EDCH(line, off);
-    c = max(c,32);
-    GotoXY(off + 1, line + 1);
-    Color(0, 47);
-    printChar(c);
-    Color(7, 0);
-}
-
-void showLine(int l) {
-    int sl = scrTop+l;
-    if (!lineShow[sl]) { return; }
-    SHOW(l,0);
-    GotoXY(1, l+1);
-    for (int o = 0; o < LLEN; o++) {
-        int c = edChar(l, o);
-        if (c) { printChar(c); }
-        else { ClearEOL(); break; }
-    }
-    if (l == line) { showCursor(); }
+    GotoXY(off+1, line+1);
+    CursorOn();
 }
 
 void showStatus() {
@@ -153,7 +137,16 @@ void showStatus() {
 }
 
 void showEditor() {
-    for (int i = 0; i < scrLines; i++) { showLine(i); }
+    for (int i = 0; i < scrLines; i++) {
+        char *cp = &EDCH(i,0);
+        int ln = strlen(cp)-1;
+        if (ln < 0) { ln=0; }
+        // cp[ln] = 0;
+        GotoXY(1, i+1);
+        printString(cp);
+        ClearEOL();
+        // cp[ln] = 10;
+    }
 }
 
 void scroll(int amt) {
@@ -174,20 +167,23 @@ void mv(int l, int o) {
 }
 
 void gotoEOL() {
-    mv(0, -99);
-    while (EDCH(line, off) != 10) { ++off; }
+    char *cp = &EDCH(line, 0);
+    off = strlen(cp);
 }
 
 int toBlock() {
+    char cr[] = {10,0};
     fill(theBlock, 0, BLOCK_SZ);
     for (int l=0; l<MAX_LINES; l++) {
         char *y=&EDCHAR(l,0);
         strcat(theBlock,y);
+        strcat(theBlock,cr);
     }
     return (int)strlen(theBlock);
 }
 
 void addLF(int l) {
+    return;
     int o, lc = 0;
     for (o = 0; EDCH(l, o); ++o) { lc = EDCH(l, o); }
     if (lc != 10) { EDCH(l, o) = 10; }
@@ -201,7 +197,7 @@ void toBuf() {
         if (ch == 0) { break; }
         if (ch == 9) { ch = 32; }
         if (ch ==10) {
-            EDCHAR(l, o) = (char)ch;
+            EDCHAR(l, o) = 0; // (char)ch;
             if (MAX_LINES <= (++l)) { return; }
             o=0;
             continue;
@@ -449,13 +445,15 @@ void editFile(const char *fileName) {
     line = off = scrTop = 0;
     if (scrLines == 0) { scrLines = 35; }
     CLS();
-    CursorOff();
+    CursorBlock();
     edRdBlk();
     normalMode();
     showAll();
     while (edMode != QUIT) {
+        CursorOff();
         showEditor();
         showStatus();
+        showCursor();
         processEditorChar(edKey());
     }
     GotoXY(1, scrLines+2);
