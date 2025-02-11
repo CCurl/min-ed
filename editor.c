@@ -2,25 +2,21 @@
 
 #include "editor.h"
 
-// Change these as desired
-#define MAX_LINES     500 // Maximum number of lines
-#define LLEN          100 // Maximum width of a line
-
 #define BLOCK_SZ      (MAX_LINES*LLEN)
 #define EDCHAR(l,o)   edBuf[((l)*LLEN)+(o)]
 #define EDCH(l,o)     EDCHAR(scrTop+l,o)
-#define SHOW(l,v)     lineShow[(scrTop+l)]=v
-#define DIRTY(l)      isDirty=1; SHOW(l,1)
+#define DIRTY(l)      isDirty=1;
 #define RCASE         return; case
-#define min(a,b)      ((a<b)?(a):(b))
-#define max(a,b)      ((a>b)?(a):(b))
+#ifndef min
+    #define min(a,b)      ((a<b)?(a):(b))
+    #define max(a,b)      ((a>b)?(a):(b))
+#endif
 
 enum { NORMAL=1, INSERT, REPLACE, QUIT };
 
 int scrLines = 0;
 char theBlock[BLOCK_SZ], *edFileName;
-int line, off, edMode, scrTop;
-int isDirty, lineShow[MAX_LINES];
+int line, off, edMode, scrTop, isDirty;
 char edBuf[BLOCK_SZ], tBuf[LLEN], mode[32];
 char yanked[LLEN];
 
@@ -39,6 +35,7 @@ static void Red() { FG(203); }
 static void Yellow() { FG(226); }
 static void White() { FG(231); }
 static void Purple() { FG(213); }
+static void Cyan() { FG(111); }
 void normalMode() { edMode=NORMAL; strcpy(mode, "normal"); }
 void insertMode()  { edMode=INSERT;  strcpy(mode, "insert"); }
 void replaceMode() { edMode=REPLACE; strcpy(mode, "replace"); }
@@ -107,10 +104,6 @@ void NormLO() {
     if (scrTop > (MAX_LINES-scrLines)) { scrTop=MAX_LINES-scrLines; }
 }
 
-void showAll() {
-    for (int i = 0; i < MAX_LINES; i++) { lineShow[i] = 1; }
-}
-
 char edChar(int l, int o) {
     char c = EDCH(l,o);
     if (c==0) { return c; }
@@ -126,44 +119,40 @@ void showStatus() {
     static int cnt = 0;
     int c = EDCH(line,off);
     GotoXY(1, scrLines+1);
-    printString("- min-ed v0.1 - ");
-    printStringF("%s%s", edFileName, isDirty ? " * " : " ");
-    (edMode == NORMAL) ? Green() : Red();
+    Cyan(); printString("- min-ed v0.1 - ");
+    Yellow(); printStringF("%s%s", edFileName, isDirty ? " * " : " ");
+    if (edMode == NORMAL) { Green(); } else { Red(); }
     printString(mode);
-    White();
-    printStringF(" [%d:%d]", (line+scrTop)+1, off+1);
+    Cyan(); printStringF(" [%d:%d]", (line+scrTop)+1, off+1);
     printStringF(" (#%d/$%02x)", c, c);
     ClearEOL();
 }
 
 void showEditor() {
+    White();
     for (int i = 0; i < scrLines; i++) {
         char *cp = &EDCH(i,0);
         int ln = strlen(cp)-1;
         if (ln < 0) { ln=0; }
-        // cp[ln] = 0;
         GotoXY(1, i+1);
         printString(cp);
         ClearEOL();
-        // cp[ln] = 10;
     }
 }
 
 void scroll(int amt) {
     int st = scrTop;
     scrTop += amt;
-    if (st != scrTop) { line -= amt; showAll(); }
+    if (st != scrTop) { line -= amt; }
     NormLO();
 }
 
 void mv(int l, int o) {
-    SHOW(line,1);
     line += l;
     off += o;
     if (line < 0) { scroll(line); line = 0; }
     if (scrLines <= line) { scroll(line-scrLines+1); line=scrLines-1; }
     NormLO();
-    SHOW(line,1);
 }
 
 void gotoEOL() {
@@ -182,13 +171,6 @@ int toBlock() {
     return (int)strlen(theBlock);
 }
 
-void addLF(int l) {
-    return;
-    int o, lc = 0;
-    for (o = 0; EDCH(l, o); ++o) { lc = EDCH(l, o); }
-    if (lc != 10) { EDCH(l, o) = 10; }
-}
-
 void toBuf() {
     int o = 0, l = 0, ch;
     fill(edBuf, 0, BLOCK_SZ);
@@ -197,7 +179,7 @@ void toBuf() {
         if (ch == 0) { break; }
         if (ch == 9) { ch = 32; }
         if (ch ==10) {
-            EDCHAR(l, o) = 0; // (char)ch;
+            EDCHAR(l, o) = 0;
             if (MAX_LINES <= (++l)) { return; }
             o=0;
             continue;
@@ -205,9 +187,6 @@ void toBuf() {
             EDCHAR(l,o++) = (char)ch;
         }
     }
-    o = scrTop; scrTop = 0;
-    for (int i = 0; i < MAX_LINES; i++) { addLF(i); }
-    scrTop = o;
 }
 
 void edRdBlk() {
@@ -218,7 +197,6 @@ void edRdBlk() {
         fclose(fp);
     }
     toBuf();
-    showAll();
     isDirty = 0;
 }
 
@@ -243,7 +221,6 @@ void deleteChar() {
         EDCH(line,o) = EDCH(line, o+1);
     }
     DIRTY(line);
-    addLF(line);
 }
 
 void deleteWord() {
@@ -255,11 +232,12 @@ void deleteWord() {
     while (EDCH(line,off)==' ') { deleteChar(); }
 }
 
-void deleteLine() {
-    EDCH(line,0) = 0;
-    toBlock();
-    toBuf();
-    showAll();
+void deleteLine(int ln) {
+    for (int i = ln; i < (MAX_LINES-1); i++) {
+        char *t = &EDCH(i, 0);
+        char *f = &EDCH(i+1, 0);
+        strcpy(t, f);
+    }
     isDirty = 1;
 }
 
@@ -271,41 +249,43 @@ void insertSpace() {
     DIRTY(line);
 }
 
-void insertLine() {
-    insertSpace();
-    EDCH(line, off)=10;
-    toBlock();
-    toBuf();
-    showAll();
+void insertLineAt(int ln, int o) {
+    char x[LLEN];
+    ln += scrTop;
+    strcpy(x, &EDCHAR(ln,o));
+    for (int i = MAX_LINES-1; i > ln; i--) {
+        char *t = &EDCHAR(i, 0);
+        char *f = &EDCHAR(i-1, 0);
+        for (int c=0; c<LLEN; c++) { t[c] = f[c]; }
+    }
+    EDCHAR(ln,o) = 0;
+	strcpy(&EDCHAR(ln+1, 0), x);
     isDirty = 1;
 }
 
 void joinLines() {
-    gotoEOL();
-    EDCH(line, off) = 0;
-    toBlock();
-    toBuf();
-    showAll();
-    isDirty = 1;
+    char *f = &EDCH(line+1, 0);
+    char *t = &EDCH(line, 0);
+	strcat(t, f);
+    deleteLine(line+1);
 }
 
 void replaceChar(char c, int force, int mov) {
     if (!BTW(c,32,126) && (!force)) { return; }
-    for (int o=off-1; 0<=o; --o) {
-        int ch = EDCH(line, o);
-        if (ch && (ch != 10)) { break; }
-        EDCH(line,o)=32;
+    char *cp = &EDCH(line, 0);
+    if ((int)strlen(cp) < off) {
+		for (int i = strlen(cp); i <= off; i++) { cp[i] = 32; }
+        cp[off+1] = 0;
     }
     EDCH(line, off)=c;
     DIRTY(line);
-    addLF(line);
     if (mov) { mv(0, 1); }
 }
 
 int doInsertReplace(char c) {
     if (c==13) {
         if (edMode == REPLACE) { mv(1, -999); }
-        else { insertLine(); mv(1,-99); }
+        else { insertLineAt(line, off); mv(1,-99); }
         return 1;
     }
     if (!BTW(c,32,126)) { return 1; }
@@ -314,20 +294,19 @@ int doInsertReplace(char c) {
     return 1;
 }
 
-int doReplaceChar() {
+void doReplaceChar() {
     int c = key();
     replaceChar(c, 0, 1);
 }
 
 void edDelX(int c) {
     if (c==0) { c = key(); }
-    if (c=='d') { strcpy(yanked, &EDCH(line, 0)); deleteLine(); }
+    if (c=='d') { strcpy(yanked, &EDCH(line, 0)); deleteLine(line); }
     else if (c=='.') { deleteChar(); }
     else if (c=='w') { deleteWord(); }
     else if (c=='X') { if (0<off) { --off; deleteChar(); } }
     else if (c=='$') {
-        EDCH(line,off) = 10;
-        c=off+1; while ((c<LLEN) && EDCH(line,c)) { EDCH(line,c)=0; c++; }
+		EDCH(line, off) = 0;
         DIRTY(line);
     }
 }
@@ -350,7 +329,7 @@ int edReadLine(char *buf, int sz) {
 void edCommand() {
     char buf[32];
     GotoXY(1, scrLines+2); ClearEOL();
-    printChar(':');
+    White();  printChar(':');
     edReadLine(buf, sizeof(buf));
     GotoXY(1, scrLines+2); ClearEOL();
     if (strEq(buf,"w")) { edSvBlk(0); }
@@ -389,6 +368,7 @@ void doControl(int c) {
         RCASE  Up: mv(-1,0);
         RCASE  Rt: mv(0,1);
         RCASE  Lt: mv(0, -1);
+        RCASE  CHome: scrTop = line = off = 0;
         RCASE  Home: mv(0,-99);
         RCASE  End:  gotoEOL();
         RCASE  PgUp: scroll(-scrLines/2);
@@ -409,8 +389,8 @@ void processEditorChar(int c) {
         case  ' ': mv(0,1);
         RCASE ':': edCommand();
         RCASE '$': gotoEOL();
-        RCASE '+': ++scrLines; CLS(); showAll();
-        RCASE '-': scrLines=max(scrLines-1,10); CLS(); showAll();
+        RCASE '+': ++scrLines;
+        RCASE '-': scrLines=max(scrLines-1,10); CLS();
         RCASE '_': mv(0,-99);
         RCASE 'a': mv(0,1);  insertMode();
         RCASE 'A': gotoEOL(); insertMode();
@@ -428,10 +408,10 @@ void processEditorChar(int c) {
         RCASE 'J': joinLines();
         RCASE 'k': mv(-1,0);
         RCASE 'l': mv(0,1);
-        RCASE 'o': mv(1,-99); insertLine(); insertMode();
-        RCASE 'O': mv(0,-99); insertLine(); insertMode();
-        RCASE 'p': mv(1,-99); insertLine(); strcpy(&EDCH(line,0), yanked);
-        RCASE 'P': mv(0,-99); insertLine(); strcpy(&EDCH(line,0), yanked);
+        RCASE 'o': mv(1,-99); insertLineAt(line, off); insertMode();
+        RCASE 'O': mv(0,-99); insertLineAt(line, off); insertMode();
+        RCASE 'p': mv(1,-99); insertLineAt(line, off); strcpy(&EDCH(line,0), yanked);
+        RCASE 'P': mv(0,-99); insertLineAt(line, off); strcpy(&EDCH(line,0), yanked);
         RCASE 'r': doReplaceChar();
         RCASE 'R': replaceMode();
         RCASE 'x': edDelX('.');
@@ -448,7 +428,7 @@ void editFile(const char *fileName) {
     CursorBlock();
     edRdBlk();
     normalMode();
-    showAll();
+    White();
     while (edMode != QUIT) {
         CursorOff();
         showEditor();
