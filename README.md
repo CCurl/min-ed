@@ -1,10 +1,14 @@
-# A minimal text editor
+# A minimal and embeddable text editor
 
-This is a minialistic text editor inspired by, and somewhat similar to, a stripped-down vi
+This is by far the most minialistic text editor I am aware of. It is inspired by vi.
+
+After looking unsuccessfully for a minimalistic text editor, I decided to write my own.
+
+It is implemented in such a way that it can easily be embedded into other programs.
 
 **NOTE: There is NO UNDO in this editor. Use ':rl' to reload the file from disk.**
 
-There are 4 modes in the editor:
+There are 4 modes in this editor:
 
 - NORMAL
 - INSERT
