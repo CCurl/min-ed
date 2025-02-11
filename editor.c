@@ -1,11 +1,10 @@
-// editor.c - A simple text editor
+// editor.c - A minimal text editor
 
 #include "editor.h"
 
 // Change these as desired
 #define MAX_LINES     500 // Maximum number of lines
 #define LLEN          100 // Maximum width of a line
-#define SCR_HEIGHT     35 // Number of lines to display
 
 #define BLOCK_SZ      (MAX_LINES*LLEN)
 #define EDCHAR(l,o)   edBuf[((l)*LLEN)+(o)]
@@ -13,17 +12,16 @@
 #define SHOW(l,v)     lineShow[(scrTop+l)]=v
 #define DIRTY(l)      isDirty=1; SHOW(l,1)
 #define RCASE         return; case
-#define BTW(n,l,h)    ((l<=n) && (n<=h))
 #define min(a,b)      ((a<b)?(a):(b))
 #define max(a,b)      ((a>b)?(a):(b))
 
 enum { NORMAL=1, INSERT, REPLACE, QUIT };
 
-int scrLines = SCR_HEIGHT;
+int scrLines = 0;
 char theBlock[BLOCK_SZ], *edFileName;
-int line, off, blkNum, edMode, scrTop;
+int line, off, edMode, scrTop;
 int isDirty, lineShow[MAX_LINES];
-char edBuf[BLOCK_SZ], tBuf[LLEN], mode[32], *msg = NULL;
+char edBuf[BLOCK_SZ], tBuf[LLEN], mode[32];
 char yanked[LLEN];
 
 void mv(int l, int o);
@@ -32,14 +30,74 @@ void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
 void ClearEOL() { printString("\x1B[K"); }
 void CursorOn() { printString("\x1B[?25h"); }
 void CursorOff() { printString("\x1B[?25l"); }
-void Color(int fg, int bg) { printStringF("\x1B[%d;%dm", (30+fg), bg?bg:40); }
+void FG(int fg) { printStringF("\x1B[38;5;%dm", fg); }
+void BG(int bg) { printStringF("\x1B[48;5;%dm", bg); }
+void Color(int fg, int bg) { FG(fg); BG(bg); }
+static void Green() { FG(40); }
+static void Red() { FG(203); }
+static void Yellow() { FG(226); }
+static void White() { FG(231); }
+static void Purple() { FG(213); }
 void normalMode() { edMode=NORMAL; strcpy(mode, "normal"); }
 void insertMode()  { edMode=INSERT;  strcpy(mode, "insert"); }
 void replaceMode() { edMode=REPLACE; strcpy(mode, "replace"); }
-int edKey() { return key(); }
 void fill(char *buf, int ch, int sz) { for (int i=0; i<sz; i++) { buf[i]=ch; } }
 int strEq(const char *a, const char *b) { return (strcmp(a,b)==0) ? 1 : 0; }
 char lower(char c) { return BTW(c,'A','Z') ? c+32 : c; }
+static int  winKey() { return (224 << 5) ^ key(); }
+static int  winFKey() { return 0xF00 + key() - 58; }
+
+// VT key mapping, after <escape>, '['
+enum { Up=7240, Dn=7248, Rt=7245, Lt=7243, Home=7239, PgUp=7241, PgDn=7249,
+    End=7247, Ins=7250, Del=7251, CHome=7287, CEnd=7285,
+    STab=12333, F1=0xF01, F5=0xF05, F6=0xF06, F7=0xF07
+};
+#define NUM_VTK 16
+static int vks[NUM_VTK][7] = {
+        { 0, 49, 53, 126, 999, F5 },
+        { 0, 49, 55, 126, 999, F6 },
+        { 0, 49, 56, 126, 999, F7 },
+        { 0, 49, 59, 53, 72, 999, CHome },
+        { 0, 49, 59, 53, 70, 999, CEnd },
+        { 0, 50, 126, 999, Ins },
+        { 0, 51, 126, 999, Del },
+        { 0, 53, 126, 999, PgUp },
+        { 0, 54, 126, 999, PgDn },
+        { 0, 65, 999, Up },
+        { 0, 66, 999, Dn },
+        { 0, 67, 999, Rt },
+        { 0, 68, 999, Lt },
+        { 0, 70, 999, End },
+        { 0, 72, 999, Home },
+        { 0, 90, 999, STab },
+    };
+
+static int vtKey() {
+    if (key() != '[') { return 27; }
+    int ndx = 0, k, m;
+    for (int i=0; i<NUM_VTK; i++) { vks[i][0] = 1; }
+    while (++ndx < 5) {
+        m = 0;
+        k = key();
+        for (int i=0; i<NUM_VTK; i++) {
+            if ((vks[i][0] == ndx) && (vks[i][ndx] == k)) {
+                if (vks[i][ndx+1] == 999) { return vks[i][ndx+2]; }
+                vks[i][0] = ndx+1;
+                m++;
+            }
+        }
+        if (m == 0) { return 27; }
+    }
+    return 27;
+}
+
+static int edKey() {
+    int x = key();
+    if (x ==   0) { return winFKey(); }  // Windows: Function key
+    if (x ==  27) { return vtKey(); }    // Possible VT control sequence
+    if (x == 224) { return winKey(); }   // Windows: start char
+    return x;
+}
 
 void NormLO() {
     line = min(max(line, 0), scrLines-1);
@@ -84,13 +142,14 @@ void showStatus() {
     static int cnt = 0;
     int c = EDCH(line,off);
     GotoXY(1, scrLines+1);
-    printString("- Block Editor v0.1 - ");
-    printStringF("Block# %03d%s", blkNum, isDirty ? " *" : "");
-    printStringF("%s- %s", msg ? msg : " ", mode);
+    printString("- min-ed v0.1 - ");
+    printStringF("%s%s", edFileName, isDirty ? " * " : " ");
+    (edMode == NORMAL) ? Green() : Red();
+    printString(mode);
+    White();
     printStringF(" [%d:%d]", (line+scrTop)+1, off+1);
     printStringF(" (#%d/$%02x)", c, c);
     ClearEOL();
-    if (msg && (1 < ++cnt)) { msg = NULL; cnt = 0; }
 }
 
 void showEditor() {
@@ -155,7 +214,7 @@ void toBuf() {
     scrTop = o;
 }
 
-void edRdBlk(int force) {
+void edRdBlk() {
     fill(theBlock, 0, BLOCK_SZ);
     FILE *fp = fopen(edFileName, "rb");
     if (fp) {
@@ -255,8 +314,13 @@ int doInsertReplace(char c) {
     }
     if (!BTW(c,32,126)) { return 1; }
     if (edMode == INSERT) { insertSpace(); }
-    replaceChar(c, 1, 1);
+    replaceChar(c, 0, 1);
     return 1;
+}
+
+int doReplaceChar() {
+    int c = key();
+    replaceChar(c, 0, 1);
 }
 
 void edDelX(int c) {
@@ -294,6 +358,7 @@ void edCommand() {
     edReadLine(buf, sizeof(buf));
     GotoXY(1, scrLines+2); ClearEOL();
     if (strEq(buf,"w")) { edSvBlk(0); }
+    else if (strEq(buf,"rl")) { edRdBlk(); }
     else if (strEq(buf,"w!")) { edSvBlk(1); }
     else if (strEq(buf,"wq")) { edSvBlk(0); edMode=QUIT; }
     else if (strEq(buf,"q!")) { edMode=QUIT; }
@@ -305,7 +370,7 @@ void edCommand() {
 
 void doControl(int c) {
     if ((c == 8) || (c == 127)) {          // <backspace>
-        c = (edMode==INSERT) ? 24 : 150;
+        c = (edMode==INSERT) ? 24 : Lt;
     }
     if ((c == 13) && BTW(edMode,INSERT,REPLACE)) {
         doInsertReplace(c);
@@ -324,7 +389,16 @@ void doControl(int c) {
         RCASE  25: scroll(-1);             // <ctrl-y>
         RCASE  26: edDelX('.');            // <ctrl-z>
         RCASE  27: normalMode();           // <esc>
-        RCASE 150: mv(0, -1);              // <left>
+        RCASE  Dn: mv(1,0);
+        RCASE  Up: mv(-1,0);
+        RCASE  Rt: mv(0,1);
+        RCASE  Lt: mv(0, -1);
+        RCASE  Home: mv(0,-99);
+        RCASE  End:  gotoEOL();
+        RCASE  PgUp: scroll(-scrLines/2);
+        RCASE  PgDn: scroll(scrLines/2);
+        RCASE  Ins: insertMode();
+        RCASE  Del: edDelX('.');
     }
 }
 
@@ -358,12 +432,11 @@ void processEditorChar(int c) {
         RCASE 'J': joinLines();
         RCASE 'k': mv(-1,0);
         RCASE 'l': mv(0,1);
-        RCASE 'L': edRdBlk(1);
         RCASE 'o': mv(1,-99); insertLine(); insertMode();
         RCASE 'O': mv(0,-99); insertLine(); insertMode();
         RCASE 'p': mv(1,-99); insertLine(); strcpy(&EDCH(line,0), yanked);
         RCASE 'P': mv(0,-99); insertLine(); strcpy(&EDCH(line,0), yanked);
-        RCASE 'r': replaceChar(edKey(), 0, 1);
+        RCASE 'r': doReplaceChar();
         RCASE 'R': replaceMode();
         RCASE 'x': edDelX('.');
         RCASE 'X': edDelX('X');
@@ -374,10 +447,10 @@ void processEditorChar(int c) {
 void editFile(const char *fileName) {
     edFileName = (char *)fileName;
     line = off = scrTop = 0;
-    msg = NULL;
+    if (scrLines == 0) { scrLines = 35; }
     CLS();
     CursorOff();
-    edRdBlk(0);
+    edRdBlk();
     normalMode();
     showAll();
     while (edMode != QUIT) {

@@ -63,8 +63,28 @@ void printStringF(const char *fmt, ...) {
     printString(buf);
 }
 
+int parseNum(char *num) {
+    int ret = 0;
+    while (BTW(*num,'0','9')) {
+        ret = (ret * 10) + (*num - '0');
+        ++num;
+    }
+    return ret ? ret : 35;
+}
+
 int main(int argc, char *argv[]) {
-    if (argc>1) { editFile(argv[1]); }
-    else { printString("usage: min-ed FileName\n"); }
+    int fnNdx = 0;
+    if (1 < argc) {
+        fnNdx = 1;
+        if (strEq(argv[1], "-h")) {
+            scrLines = parseNum(argv[2]);
+            fnNdx = (2 < argc) ? 3 : 0;
+        }
+    }
+    if (0 < fnNdx) {
+        editFile(argv[fnNdx]);
+    } else {
+        printString("usage: min-ed [-h height] FileName\n");
+    }
     return 0;
 }

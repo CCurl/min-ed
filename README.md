@@ -1,8 +1,8 @@
 # A minimal text editor
 
-This is a minialistic text editor inspired by, and somewhat similar to, an extremely stripped-down vi
+This is a minialistic text editor inspired by, and somewhat similar to, a stripped-down vi
 
-**NOTE: There is NO UNDO in this editor. Use 'L' to reload the file from disk.**
+**NOTE: There is NO UNDO in this editor. Use ':rl' to reload the file from disk.**
 
 There are 4 modes in the editor:
 
@@ -52,7 +52,7 @@ NORMAL mode is similar to VI:
 | C    | Change: Delete to the end of the line and change to INSERT mode (same as 'd$A') |
 | dd   | Copy the current line into the YANK buffer and delete the line |
 | d.   | Delete the char under the cursor (same as 'x') |
-| dw   | Delete the cto the end of the word |
+| dw   | Delete to the end of the word |
 | d$   | Delete to the end of the line |
 | D    | Delete to the end of the line (same as 'd$') |
 | g    | Goto the top-left of the screen |
@@ -60,7 +60,6 @@ NORMAL mode is similar to VI:
 | i    | Insert: change to INSERT mode |
 | I    | Insert: goto the beginning of the line and change to INSERT mode |
 | J    | Join the current and next lines together |
-| L    | reLoad: discard all changes and reload the current block |
 | o    | Insert an empty line BELOW the current line and change to INSERT mode |
 | O    | Insert an empty line ABOVE the current line and change to INSERT mode |
 | p    | Paste the YANK buffer into a new line BELOW the current line |
@@ -74,13 +73,13 @@ NORMAL mode is similar to VI:
 
 ### INSERT mode
 
-In INSERT mode, all printable characters are inserted into the block.
+In INSERT mode, all printable characters are inserted into the file.
 
 Carriage-Return inserts a new line.
 
 ### REPLACE mode
 
-In REPLACE mode, all printable characters are placed into the block.
+In REPLACE mode, all printable characters are placed into the file.
 
 Carriage-Return moves the cursor to the beginning of the next line.
 
@@ -90,8 +89,9 @@ COMMAND mode is invoked when pressing ':' in NORMAL mode.
 
 | Command | Action|
 | :--     | :-- |
-| w       | Write the current block if it has changed |
-| w!      | Write the current block, even if it has NOT changed |
-| q       | Quit, if the current block has NOT changed |
-| q!      | Quit, even if the current block has changed |
-| wq      | Write the current block and quit (same as ':w' ':q') |
+| w       | Write the current file if it has changed |
+| w!      | Write the current file, even if it has NOT changed |
+| q       | Quit, if the current file has NOT changed |
+| q!      | Quit, even if the current file has changed |
+| wq      | Write the current file and quit (same as ':w' ':q') |
+| rl      | Reload the current file. |

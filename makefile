@@ -17,7 +17,7 @@ clean:
 	rm -f $(app)
 
 test: clean $(app)
-	./$(app) editor.c
+	./$(app) -h 32 editor.c
 
 bin: $(app)
 	cp -u -p $(app) ~/bin/$(app)
