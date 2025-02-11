@@ -3,6 +3,8 @@
 #include "editor.h"
 
 #define BLOCK_SZ      (MAX_LINES*LLEN)
+#define MAX_LINE      (MAX_LINES-1)
+#define MAX_OFF       (LLEN-1)
 #define EDCHAR(l,o)   edBuf[((l)*LLEN)+(o)]
 #define EDCH(l,o)     EDCHAR(scrTop+l,o)
 #define DIRTY(l)      isDirty=1;
@@ -99,7 +101,7 @@ static int edKey() {
 
 void NormLO() {
     line = min(max(line, 0), scrLines-1);
-    off = min(max(off,0), LLEN-1);
+    off = min(max(off,0), MAX_OFF);
     if (scrTop < 0) { scrTop=0; }
     if (scrTop > (MAX_LINES-scrLines)) { scrTop=MAX_LINES-scrLines; }
 }
@@ -132,8 +134,6 @@ void showEditor() {
     White();
     for (int i = 0; i < scrLines; i++) {
         char *cp = &EDCH(i,0);
-        int ln = strlen(cp)-1;
-        if (ln < 0) { ln=0; }
         GotoXY(1, i+1);
         printString(cp);
         ClearEOL();
@@ -233,7 +233,7 @@ void deleteWord() {
 }
 
 void deleteLine(int ln) {
-    for (int i = ln; i < (MAX_LINES-1); i++) {
+    for (int i = ln; i < MAX_LINE; i++) {
         char *t = &EDCH(i, 0);
         char *f = &EDCH(i+1, 0);
         strcpy(t, f);
@@ -242,7 +242,7 @@ void deleteLine(int ln) {
 }
 
 void insertSpace() {
-    for (int o=LLEN-1; off<o; o--) {
+    for (int o=MAX_OFF; off<o; o--) {
         EDCH(line,o) = EDCH(line, o-1);
     }
     EDCH(line, off)=32;
@@ -253,20 +253,20 @@ void insertLineAt(int ln, int o) {
     char x[LLEN];
     ln += scrTop;
     strcpy(x, &EDCHAR(ln,o));
-    for (int i = MAX_LINES-1; i > ln; i--) {
+    for (int i = MAX_LINE; i > ln; i--) {
         char *t = &EDCHAR(i, 0);
         char *f = &EDCHAR(i-1, 0);
         for (int c=0; c<LLEN; c++) { t[c] = f[c]; }
     }
     EDCHAR(ln,o) = 0;
-	strcpy(&EDCHAR(ln+1, 0), x);
+    strcpy(&EDCHAR(ln+1, 0), x);
     isDirty = 1;
 }
 
 void joinLines() {
     char *f = &EDCH(line+1, 0);
     char *t = &EDCH(line, 0);
-	strcat(t, f);
+    strcat(t, f);
     deleteLine(line+1);
 }
 
@@ -274,7 +274,7 @@ void replaceChar(char c, int force, int mov) {
     if (!BTW(c,32,126) && (!force)) { return; }
     char *cp = &EDCH(line, 0);
     if ((int)strlen(cp) < off) {
-		for (int i = strlen(cp); i <= off; i++) { cp[i] = 32; }
+        for (int i = strlen(cp); i <= off; i++) { cp[i] = 32; }
         cp[off+1] = 0;
     }
     EDCH(line, off)=c;
@@ -306,7 +306,7 @@ void edDelX(int c) {
     else if (c=='w') { deleteWord(); }
     else if (c=='X') { if (0<off) { --off; deleteChar(); } }
     else if (c=='$') {
-		EDCH(line, off) = 0;
+        EDCH(line, off) = 0;
         DIRTY(line);
     }
 }
