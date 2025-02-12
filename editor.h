@@ -4,20 +4,21 @@
 #include <stdio.h>
 #include <string.h>
 
+#define VERSION "25.02.11"
+
 // Change these as desired
 #define MAX_LINES     500 // Maximum number of lines
 #define LLEN          100 // Maximum width of a line
 
-#define VERSION "25.02.11"
+#define BTW(num,lo,hi)    ((lo<=num) && (num<=hi))
 
-#define BTW(n,l,h)    ((l<=n) && (n<=h))
+// These are defined by editor.c
+extern int  scrLines;
+extern void editFile(const char *fileName);
+extern int  strEq(const char *a, const char *b);
 
-extern int scrLines;
-void editFile(const char *fileName);
-
+// These are needed by editor.c
 extern void printStringF(const char *fmt, ...);
 extern void printString(const char *str);
 extern void printChar(const char ch);
-extern int  strEq(const char *a, const char *b);
-
-extern int key();
+extern int  key();
