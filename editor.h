@@ -8,6 +8,8 @@
 #define MAX_LINES     500 // Maximum number of lines
 #define LLEN          100 // Maximum width of a line
 
+#define VERSION "25.02.11"
+
 #define BTW(n,l,h)    ((l<=n) && (n<=h))
 
 extern int scrLines;
