@@ -69,16 +69,17 @@ int parseNum(char *num) {
         ret = (ret * 10) + (*num - '0');
         ++num;
     }
-    return ret ? ret : 35;
+    return ret ? ret : scrLines;
 }
 
 int main(int argc, char *argv[]) {
     int fnNdx = 0;
+    scrLines = 35;
     if (1 < argc) {
         fnNdx = 1;
         if (strEq(argv[1], "-h")) {
             scrLines = parseNum(argv[2]);
-            fnNdx = (2 < argc) ? 3 : 0;
+            fnNdx = (3 < argc) ? 3 : 0;
         }
     }
     if (0 < fnNdx) {
