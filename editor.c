@@ -19,6 +19,7 @@ int scrLines, line, off, edMode, scrTop, isDirty;
 char theBlock[BLOCK_SZ], edBuf[BLOCK_SZ];
 char yanked[LLEN], mode[32], *edFileName;
 
+int  strEq(const char *a, const char *b) { return (strcmp(a,b)==0) ? 1 : 0; }
 static void mv(int ln, int o);
 static void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
 static void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
@@ -43,15 +44,15 @@ static char lower(char c) { return BTW(c,'A','Z') ? c+32 : c; }
 static void gotoEOL() { off = strlen(&EDCH(line, 0)); }
 static int  winKey() { return (224 << 5) ^ key(); }
 static int  winFKey() { return 0xF00 + key() - 58; }
-int  strEq(const char *a, const char *b) { return (strcmp(a,b)==0) ? 1 : 0; }
 
-// VT key mapping, after <escape>, '['
+// My key-codes
 enum { Up=7240, Dn=7248, Rt=7245, Lt=7243, Home=7239, PgUp=7241, PgDn=7249,
     End=7247, Ins=7250, Del=7251, CHome=7287, CEnd=7285,
     STab=12333, F1=0xF01, F5=0xF05, F6=0xF06, F7=0xF07
 };
-#define NUM_VTK 16
-static int vks[NUM_VTK][7] = {
+
+// VT key mapping, after <escape>, '['
+static int vks[][7] = {
         { 0, 49, 53, 126, 999, F5 },
         { 0, 49, 55, 126, 999, F6 },
         { 0, 49, 56, 126, 999, F7 },
@@ -68,16 +69,19 @@ static int vks[NUM_VTK][7] = {
         { 0, 70, 999, End },
         { 0, 72, 999, Home },
         { 0, 90, 999, STab },
+        { 0,  0,   0, 0 }
     };
 
 static int vtKey() {
+    static int vkSz = 0;
+    if (vkSz == 0) { while (vks[vkSz][1]) { ++vkSz; } }
     if (key() != '[') { return 27; }
     int ndx = 0, k, m;
-    for (int i=0; i<NUM_VTK; i++) { vks[i][0] = 1; }
+    for (int i=0; i<vkSz; i++) { vks[i][0] = 1; }
     while (++ndx < 5) {
         m = 0;
         k = key();
-        for (int i=0; i<NUM_VTK; i++) {
+        for (int i=0; i<vkSz; i++) {
             if ((vks[i][0] == ndx) && (vks[i][ndx] == k)) {
                 if (vks[i][ndx+1] == 999) { return vks[i][ndx+2]; }
                 vks[i][0] = ndx+1;
