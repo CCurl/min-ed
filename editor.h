@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define VERSION "25.02.11"
+#define VERSION "25.02.19"
 
 // Change these as desired
 #define MAX_LINES     500 // Maximum number of lines
