@@ -122,11 +122,11 @@ static void showStatus() {
 
 static void showEditor() {
     White();
+    GotoXY(1, 1);
     for (int i = 0; i < scrLines; i++) {
-        char *cp = &EDCH(i,0);
-        GotoXY(1, i+1);
-        printString(cp);
+        printString(&EDCH(i,0));
         ClearEOL();
+        printString("\n");
     }
 }
 
