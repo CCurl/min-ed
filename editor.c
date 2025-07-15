@@ -126,7 +126,7 @@ static void showEditor() {
     for (int i = 0; i < scrLines; i++) {
         printString(&EDCH(i,0));
         ClearEOL();
-        printString("\n");
+        printString("\r\n");
     }
 }
 
