@@ -25,12 +25,14 @@ There are 4 modes in this editor:
 | [ctrl]+l | Right 1 char |
 | [tab]    | Right 8 chars |
 | [ctrl]+i | Right 8 chars |
+| [ctrl]+q | Left 8 chars |
 | [ctrl]+e | Scroll down 1 line |
 | [ctrl]+y | Scroll up 1 line |
 | [ctrl]+d | Scroll down 1/2 screen |
 | [ctrl]+u | Scroll up 1/2 screen |
 | [ctrl]+x | Delete the char to the left of the cursor |
 | [ctrl]+z | Delete the char under the cursor |
+| [ctrl]+c | Change to NORMAL mode |
 | [escape] | Change to NORMAL mode |
 
 ### NORMAL mode
@@ -68,6 +70,7 @@ NORMAL mode is similar to VI:
 | O    | Insert an empty line ABOVE the current line and change to INSERT mode |
 | p    | Paste the YANK buffer into a new line BELOW the current line |
 | P    | Paste the YANK buffer into a new line ABOVE the current line |
+| q    | Go left 8 chars |
 | r    | Replace the char under the cursor with the next key pressed (if printable) |
 | R    | Change to REPLACE mode |
 | x    | Delete the char under the cursor |

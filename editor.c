@@ -126,7 +126,7 @@ static void showEditor() {
     for (int i = 0; i < scrLines; i++) {
         printString(&EDCH(i,0));
         ClearEOL();
-        printString("\n");
+        printString("\r\n");
     }
 }
 
@@ -336,13 +336,15 @@ static void doControl(int c) {
         return;
     }
     switch (c) {
-        case    4: scroll(scrLines/2);     // <ctrl-d>
+        case    3: normalMode();           // <ctrl-c>
+        RCASE   4: scroll(scrLines/2);     // <ctrl-d>
         RCASE   5: scroll(1);              // <ctrl-e>
         RCASE   9: mv(0,8);                // <tab>
         RCASE  10: mv(1,0);                // <ctrl-j>
         RCASE  11: mv(-1,0);               // <ctrl-k>
         RCASE  12: mv(0,1);                // <ctrl-l>
         RCASE  13: mv(1,-99);              // <ctrl-m>
+        RCASE  17: mv(0,-8);               // <ctrl-q>
         RCASE  21: scroll(-scrLines/2);    // <ctrl-u>
         RCASE  24: edDelX('X');            // <ctrl-x>
         RCASE  25: scroll(-1);             // <ctrl-y>
@@ -397,6 +399,7 @@ static void processEditorChar(int c) {
         RCASE 'O': mv(0,-99); insertLineAt(line, off); insertMode();
         RCASE 'p': mv(1,-99); insertLineAt(line, off); strcpy(&EDCH(line,0), yanked);
         RCASE 'P': mv(0,-99); insertLineAt(line, off); strcpy(&EDCH(line,0), yanked);
+        RCASE 'q': mv(0,-8);
         RCASE 'r': doReplaceChar();
         RCASE 'R': replaceMode();
         RCASE 'x': edDelX('.');

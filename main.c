@@ -7,6 +7,8 @@
 #include <conio.h>
 int qKey() { return _kbhit(); }
 int key() { return _getch(); }
+void ttyModeNorm() {}
+void ttyModeRaw() {}
 
 #elif (defined __i386 || defined __x86_64)
 
@@ -32,20 +34,20 @@ void ttyModeRaw() {
 int qKey() {
     struct timeval tv;
     fd_set rdfs;
-    ttyModeRaw();
+    // ttyModeRaw();
     tv.tv_sec = 0;
     tv.tv_usec = 0;
     FD_ZERO(&rdfs);
     FD_SET(STDIN_FILENO, &rdfs);
     select(STDIN_FILENO+1, &rdfs, NULL, NULL, &tv);
     int x = FD_ISSET(STDIN_FILENO, &rdfs);
-    ttyModeNorm();
+    // ttyModeNorm();
     return x;
 }
 int key() {
-    ttyModeRaw();
+    // ttyModeRaw();
     int x = getchar();
-    ttyModeNorm();
+    // ttyModeNorm();
     return x;
 }
 
@@ -83,7 +85,9 @@ int main(int argc, char *argv[]) {
         }
     }
     if (0 < fnNdx) {
-        editFile(argv[fnNdx]);
+		ttyModeRaw();
+		editFile(argv[fnNdx]);
+		ttyModeNorm();
     } else {
         printString("usage: min-ed [-h height] FileName\n");
     }
